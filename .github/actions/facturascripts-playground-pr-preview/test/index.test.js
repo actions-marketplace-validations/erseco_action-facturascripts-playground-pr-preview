@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toBase64Url, buildBlueprint, buildPreviewUrl, buildCommentBody } from '../lib.js';
+import {
+  toBase64Url,
+  buildBlueprint,
+  buildPreviewUrl,
+  buildCommentBody,
+  parseJsonInput,
+  parseOptionalBoolean,
+} from '../lib.js';
 
 test('toBase64Url produces valid base64url (no +, /, or = chars)', () => {
   const input = '{"test":"hello world+/="}';
@@ -33,6 +40,130 @@ test('buildBlueprint returns correct structure', () => {
     },
     plugins: ['https://example.com/plugin.zip'],
   });
+});
+
+test('buildBlueprint adds optional sections, deduplicates plugins, and keeps unset sections out', () => {
+  const bp = buildBlueprint(
+    'https://example.com/plugin.zip',
+    'Test Title',
+    'test-author',
+    'Test description',
+    {
+      extraPlugins: [
+        'PluginA',
+        ' https://example.com/plugin.zip ',
+        'PluginB',
+        'PluginA',
+      ],
+      seed: {
+        customers: [{ codcliente: 'CDEMO1', nombre: 'Cliente Demo' }],
+      },
+      landingPage: '/admin',
+      debugEnabled: true,
+      siteTitle: 'Demo Site',
+      siteLocale: 'es_ES',
+      loginUsername: 'admin',
+    }
+  );
+
+  assert.deepEqual(bp, {
+    meta: {
+      title: 'Test Title',
+      author: 'test-author',
+      description: 'Test description',
+    },
+    plugins: [
+      'https://example.com/plugin.zip',
+      'PluginA',
+      'PluginB',
+    ],
+    landingPage: '/admin',
+    debug: {
+      enabled: true,
+    },
+    siteOptions: {
+      title: 'Demo Site',
+      locale: 'es_ES',
+    },
+    login: {
+      username: 'admin',
+    },
+    seed: {
+      customers: [{ codcliente: 'CDEMO1', nombre: 'Cliente Demo' }],
+    },
+  });
+
+  assert.equal('timezone' in bp.siteOptions, false);
+});
+
+test('buildBlueprint applies blueprint override last and still deduplicates plugins', () => {
+  const bp = buildBlueprint(
+    'https://example.com/plugin.zip',
+    'Generated Title',
+    'generated-author',
+    'Generated description',
+    {
+      extraPlugins: ['PluginA'],
+      debugEnabled: true,
+      blueprintOverride: {
+        meta: {
+          title: 'Override Title',
+        },
+        debug: {
+          enabled: false,
+        },
+        siteOptions: {
+          timezone: 'Europe/Madrid',
+        },
+        plugins: ['PluginA', 'PluginA', 'PluginB'],
+      },
+    }
+  );
+
+  assert.deepEqual(bp, {
+    meta: {
+      title: 'Override Title',
+      author: 'generated-author',
+      description: 'Generated description',
+    },
+    debug: {
+      enabled: false,
+    },
+    siteOptions: {
+      timezone: 'Europe/Madrid',
+    },
+    plugins: ['PluginA', 'PluginB'],
+  });
+});
+
+test('parseJsonInput validates JSON types', () => {
+  assert.deepEqual(
+    parseJsonInput('extra-plugins', '["PluginA"]', 'array'),
+    ['PluginA']
+  );
+  assert.deepEqual(
+    parseJsonInput('seed-json', '{"customers":[]}', 'object'),
+    { customers: [] }
+  );
+  assert.equal(parseJsonInput('seed-json', '', 'object'), undefined);
+  assert.throws(
+    () => parseJsonInput('extra-plugins', '{"plugin":"A"}', 'array'),
+    /must be a JSON array/
+  );
+  assert.throws(
+    () => parseJsonInput('seed-json', '[1,2,3]', 'object'),
+    /must be a JSON object/
+  );
+});
+
+test('parseOptionalBoolean accepts common boolean forms and rejects invalid values', () => {
+  assert.equal(parseOptionalBoolean('true', 'debug-enabled'), true);
+  assert.equal(parseOptionalBoolean('OFF', 'debug-enabled'), false);
+  assert.equal(parseOptionalBoolean('', 'debug-enabled'), undefined);
+  assert.throws(
+    () => parseOptionalBoolean('maybe', 'debug-enabled'),
+    /must be a boolean value/
+  );
 });
 
 test('buildPreviewUrl appends blueprint-data query param', () => {

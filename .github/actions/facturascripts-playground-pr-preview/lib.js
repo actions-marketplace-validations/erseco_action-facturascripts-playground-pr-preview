@@ -9,23 +9,173 @@ export function toBase64Url(str) {
   return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Parses an optional JSON action input.
+ * @param {string} name
+ * @param {string} value
+ * @param {'array' | 'object'} expectedType
+ * @returns {object | Array | undefined}
+ */
+export function parseJsonInput(name, value, expectedType) {
+  if (!value || !value.trim()) {
+    return undefined;
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(value);
+  } catch (error) {
+    throw new Error(`Invalid JSON for "${name}": ${error.message}`);
+  }
+
+  if (expectedType === 'array' && !Array.isArray(parsed)) {
+    throw new Error(`Input "${name}" must be a JSON array.`);
+  }
+
+  if (expectedType === 'object' && !isPlainObject(parsed)) {
+    throw new Error(`Input "${name}" must be a JSON object.`);
+  }
+
+  return parsed;
+}
+
+/**
+ * Parses an optional boolean action input.
+ * @param {string} value
+ * @param {string} name
+ * @returns {boolean | undefined}
+ */
+export function parseOptionalBoolean(value, name) {
+  if (!value || !value.trim()) {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+
+  if (['false', '0', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+
+  throw new Error(
+    `Input "${name}" must be a boolean value such as "true" or "false".`
+  );
+}
+
+function dedupePlugins(plugins) {
+  return [...new Set(plugins.map((plugin) => plugin.trim()).filter(Boolean))];
+}
+
+function mergeBlueprint(baseValue, overrideValue) {
+  if (overrideValue === undefined) {
+    return baseValue;
+  }
+
+  if (Array.isArray(overrideValue)) {
+    return overrideValue;
+  }
+
+  if (isPlainObject(baseValue) && isPlainObject(overrideValue)) {
+    const merged = { ...baseValue };
+
+    for (const [key, value] of Object.entries(overrideValue)) {
+      merged[key] = mergeBlueprint(baseValue[key], value);
+    }
+
+    return merged;
+  }
+
+  return overrideValue;
+}
+
 /**
  * Builds the blueprint JSON object from action inputs.
  * @param {string} zipUrl
  * @param {string} title
  * @param {string} author
  * @param {string} description
+ * @param {object} [options]
  * @returns {object}
  */
-export function buildBlueprint(zipUrl, title, author, description) {
-  return {
+export function buildBlueprint(
+  zipUrl,
+  title,
+  author,
+  description,
+  options = {}
+) {
+  const {
+    extraPlugins = [],
+    seed,
+    landingPage,
+    debugEnabled,
+    siteTitle,
+    siteLocale,
+    siteTimezone,
+    loginUsername,
+    loginPassword,
+    blueprintOverride,
+  } = options;
+
+  const blueprint = {
     meta: {
       title,
       author,
       description,
     },
-    plugins: [zipUrl],
+    plugins: dedupePlugins([zipUrl, ...extraPlugins]),
   };
+
+  if (landingPage) {
+    blueprint.landingPage = landingPage;
+  }
+
+  if (debugEnabled !== undefined) {
+    blueprint.debug = { enabled: debugEnabled };
+  }
+
+  const siteOptions = {};
+  if (siteTitle) {
+    siteOptions.title = siteTitle;
+  }
+  if (siteLocale) {
+    siteOptions.locale = siteLocale;
+  }
+  if (siteTimezone) {
+    siteOptions.timezone = siteTimezone;
+  }
+  if (Object.keys(siteOptions).length > 0) {
+    blueprint.siteOptions = siteOptions;
+  }
+
+  const login = {};
+  if (loginUsername) {
+    login.username = loginUsername;
+  }
+  if (loginPassword) {
+    login.password = loginPassword;
+  }
+  if (Object.keys(login).length > 0) {
+    blueprint.login = login;
+  }
+
+  if (seed) {
+    blueprint.seed = seed;
+  }
+
+  const mergedBlueprint = mergeBlueprint(blueprint, blueprintOverride);
+
+  if (Array.isArray(mergedBlueprint.plugins)) {
+    mergedBlueprint.plugins = dedupePlugins(mergedBlueprint.plugins);
+  }
+
+  return mergedBlueprint;
 }
 
 /**
