@@ -33,6 +33,36 @@ inputs:
     description: 'Hidden HTML marker used to identify the sticky comment'
     required: false
     default: 'facturascripts-playground-preview'
+  extra-plugins:
+    description: 'Optional JSON array of additional plugins to append to the generated blueprint'
+    required: false
+  seed-json:
+    description: 'Optional JSON object with seed data for customers, suppliers, products, or other supported seed values'
+    required: false
+  landing-page:
+    description: 'Optional landing page path to open inside FacturaScripts Playground'
+    required: false
+  debug-enabled:
+    description: 'Optional boolean to enable or disable Playground debug mode'
+    required: false
+  site-title:
+    description: 'Optional site title for the generated blueprint siteOptions'
+    required: false
+  site-locale:
+    description: 'Optional locale for the generated blueprint siteOptions'
+    required: false
+  site-timezone:
+    description: 'Optional timezone for the generated blueprint siteOptions'
+    required: false
+  login-username:
+    description: 'Optional login username for the generated blueprint'
+    required: false
+  login-password:
+    description: 'Optional login password for the generated blueprint'
+    required: false
+  blueprint-json:
+    description: 'Optional JSON object merged last into the generated blueprint to add or override advanced settings'
+    required: false
 
 outputs:
   preview-url:

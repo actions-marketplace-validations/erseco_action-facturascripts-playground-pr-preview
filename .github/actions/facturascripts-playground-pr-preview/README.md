@@ -4,6 +4,8 @@ A GitHub Action that automatically posts or updates a sticky pull request commen
 
 ## Usage
 
+### Simple usage
+
 ```yaml
 - name: Add FacturaScripts Playground preview
   uses: erseco/action-facturascripts-playground-pr-preview@main
@@ -14,24 +16,77 @@ A GitHub Action that automatically posts or updates a sticky pull request commen
     description: Preview this PR in FacturaScripts Playground
 ```
 
+### With extra plugins
+
+```yaml
+- name: Add FacturaScripts Playground preview
+  uses: erseco/action-facturascripts-playground-pr-preview@main
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    zip-url: https://github.com/${{ github.repository }}/archive/refs/heads/${{ github.head_ref }}.zip
+    extra-plugins: '["CommandPalette","https://facturascripts.com/plugins/mi-plugin-remoto"]'
+    landing-page: /AdminPlugins
+    debug-enabled: true
+```
+
+### With seed data
+
+```yaml
+- name: Add FacturaScripts Playground preview
+  uses: erseco/action-facturascripts-playground-pr-preview@main
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    zip-url: https://github.com/${{ github.repository }}/archive/refs/heads/${{ github.head_ref }}.zip
+    seed-json: >-
+      {"customers":[{"codcliente":"CDEMO1","nombre":"Cliente Demo"}],
+       "products":[{"referencia":"SKU-DEMO-001","descripcion":"Producto demo","precio":19.95}]}
+```
+
+### With advanced blueprint override
+
+```yaml
+- name: Add FacturaScripts Playground preview
+  uses: erseco/action-facturascripts-playground-pr-preview@main
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    zip-url: https://github.com/${{ github.repository }}/archive/refs/heads/${{ github.head_ref }}.zip
+    site-title: FacturaScripts Demo
+    login-username: admin
+    login-password: admin
+    blueprint-json: >-
+      {"debug":{"enabled":true},
+       "siteOptions":{"timezone":"Europe/Madrid"},
+       "plugins":["https://github.com/${{ github.repository }}/archive/refs/heads/${{ github.head_ref }}.zip","CommandPalette"]}
+```
+
 ## Inputs
 
-| Input            | Required | Default                                                            | Description                                                                |
-|------------------|----------|--------------------------------------------------------------------|----------------------------------------------------------------------------|
-| `github-token`   | ✅        | —                                                                  | GitHub token with `pull-requests: write` permission                        |
-| `zip-url`        | ✅        | —                                                                  | URL of the plugin/extension ZIP file to load in the playground             |
-| `title`          | ❌        | `PR Preview`                                                       | Blueprint meta title                                                       |
-| `description`    | ❌        | `Preview this PR in FacturaScripts Playground`                     | Blueprint meta description                                                 |
-| `author`         | ❌        | `erseco`                                                           | Blueprint meta author                                                      |
-| `playground-url` | ❌        | `https://erseco.github.io/facturascripts-playground/`              | Base URL of the FacturaScripts Playground                                  |
-| `image-url`      | ❌        | *(playground logo)*                                                | URL of the image to display in the PR comment                              |
-| `comment-marker` | ❌        | `facturascripts-playground-preview`                                | Hidden HTML marker used to identify and deduplicate the sticky PR comment  |
+| Input | Required | Default | Description |
+|---|---|---|---|
+| `github-token` | ✅ | — | GitHub token with `pull-requests: write` permission |
+| `zip-url` | ✅ | — | URL of the plugin/extension ZIP file to load in the playground |
+| `title` | ❌ | `PR Preview` | Blueprint meta title |
+| `description` | ❌ | `Preview this PR in FacturaScripts Playground` | Blueprint meta description |
+| `author` | ❌ | `erseco` | Blueprint meta author |
+| `playground-url` | ❌ | `https://erseco.github.io/facturascripts-playground/` | Base URL of the FacturaScripts Playground |
+| `image-url` | ❌ | *(playground logo)* | URL of the image to display in the PR comment |
+| `comment-marker` | ❌ | `facturascripts-playground-preview` | Hidden HTML marker used to identify and deduplicate the sticky PR comment |
+| `extra-plugins` | ❌ | — | JSON array of additional plugins appended after `zip-url` before the final override |
+| `seed-json` | ❌ | — | JSON object with optional blueprint `seed` data |
+| `landing-page` | ❌ | — | Blueprint `landingPage` value |
+| `debug-enabled` | ❌ | — | Boolean-like value (`true`/`false`, `on`/`off`, `1`/`0`) for `debug.enabled` |
+| `site-title` | ❌ | — | Blueprint `siteOptions.title` value |
+| `site-locale` | ❌ | — | Blueprint `siteOptions.locale` value |
+| `site-timezone` | ❌ | — | Blueprint `siteOptions.timezone` value |
+| `login-username` | ❌ | — | Blueprint `login.username` value |
+| `login-password` | ❌ | — | Blueprint `login.password` value |
+| `blueprint-json` | ❌ | — | JSON object merged last into the generated blueprint, allowing advanced additions or overrides |
 
 ## Outputs
 
-| Output        | Description                         |
-|---------------|-------------------------------------|
-| `preview-url` | The full playground preview URL     |
+| Output | Description |
+|---|---|
+| `preview-url` | The full playground preview URL |
 
 ## Required Workflow Permissions
 
@@ -67,6 +122,9 @@ jobs:
           zip-url: https://github.com/${{ github.repository }}/archive/refs/heads/${{ github.head_ref }}.zip
           title: My Plugin PR Preview
           description: Preview this PR in FacturaScripts Playground
+          extra-plugins: '["CommandPalette"]'
+          site-locale: es_ES
+          site-timezone: Europe/Madrid
 ```
 
 ## How It Works
@@ -84,6 +142,45 @@ jobs:
      ]
    }
    ```
+
+   Optional inputs extend that blueprint only when they are provided. For example:
+
+   ```json
+   {
+     "meta": {
+       "title": "My Plugin PR Preview",
+       "author": "erseco",
+       "description": "Preview this PR in FacturaScripts Playground"
+     },
+     "plugins": [
+       "https://github.com/OWNER/REPO/archive/refs/heads/BRANCH.zip",
+       "CommandPalette"
+     ],
+     "landingPage": "/AdminPlugins",
+     "debug": {
+       "enabled": true
+     },
+     "siteOptions": {
+       "title": "FacturaScripts Demo",
+       "locale": "es_ES",
+       "timezone": "Europe/Madrid"
+     },
+     "login": {
+       "username": "admin",
+       "password": "admin"
+     },
+     "seed": {
+       "customers": [
+         {
+           "codcliente": "CDEMO1",
+           "nombre": "Cliente Demo"
+         }
+       ]
+     }
+   }
+   ```
+
+   The action deduplicates `plugins` where possible, safely parses JSON inputs, and applies `blueprint-json` last as the final override layer.
 
 2. **Base64url encoding** — The blueprint JSON is encoded as [base64url](https://datatracker.ietf.org/doc/html/rfc4648#section-5) (RFC 4648 §5), which replaces `+` with `-`, `/` with `_`, and strips trailing `=`.
 
@@ -114,9 +211,9 @@ npm install
 npm run build
 ```
 
-This bundles `index.js` and its dependencies into `dist/index.js` using [esbuild](https://esbuild.github.io/).
+This bundles `index.js` and its dependencies into `dist/index.cjs` using [esbuild](https://esbuild.github.io/).
 
-> **Note:** Always commit the updated `dist/index.js` after making changes to `index.js`.
+> **Note:** Always commit the updated `dist/index.cjs` after making changes to `index.js`.
 
 ### Test
 

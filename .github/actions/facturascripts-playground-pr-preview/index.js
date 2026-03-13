@@ -1,6 +1,12 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { buildBlueprint, buildPreviewUrl, buildCommentBody } from './lib.js';
+import {
+  buildBlueprint,
+  buildPreviewUrl,
+  buildCommentBody,
+  parseJsonInput,
+  parseOptionalBoolean,
+} from './lib.js';
 
 async function run() {
   try {
@@ -19,6 +25,23 @@ async function run() {
       'https://raw.githubusercontent.com/erseco/facturascripts-playground/main/public/logo.png';
     const commentMarker =
       core.getInput('comment-marker') || 'facturascripts-playground-preview';
+    const extraPlugins =
+      parseJsonInput('extra-plugins', core.getInput('extra-plugins'), 'array') ||
+      [];
+    const seed =
+      parseJsonInput('seed-json', core.getInput('seed-json'), 'object');
+    const blueprintOverride =
+      parseJsonInput('blueprint-json', core.getInput('blueprint-json'), 'object');
+    const landingPage = core.getInput('landing-page') || undefined;
+    const debugEnabled = parseOptionalBoolean(
+      core.getInput('debug-enabled'),
+      'debug-enabled'
+    );
+    const siteTitle = core.getInput('site-title') || undefined;
+    const siteLocale = core.getInput('site-locale') || undefined;
+    const siteTimezone = core.getInput('site-timezone') || undefined;
+    const loginUsername = core.getInput('login-username') || undefined;
+    const loginPassword = core.getInput('login-password') || undefined;
 
     // --- Validate PR context ---
     const context = github.context;
@@ -34,7 +57,18 @@ async function run() {
     const { owner, repo } = context.repo;
 
     // --- Build blueprint and preview URL ---
-    const blueprint = buildBlueprint(zipUrl, title, author, description);
+    const blueprint = buildBlueprint(zipUrl, title, author, description, {
+      extraPlugins,
+      seed,
+      landingPage,
+      debugEnabled,
+      siteTitle,
+      siteLocale,
+      siteTimezone,
+      loginUsername,
+      loginPassword,
+      blueprintOverride,
+    });
     const blueprintJson = JSON.stringify(blueprint, null, 2);
     const previewUrl = buildPreviewUrl(playgroundUrl, blueprintJson);
 
