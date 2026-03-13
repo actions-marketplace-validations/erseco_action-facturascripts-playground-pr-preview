@@ -136,6 +136,38 @@ test('buildBlueprint applies blueprint override last and still deduplicates plug
   });
 });
 
+test('buildBlueprint rejects non-string plugin entries', () => {
+  assert.throws(
+    () =>
+      buildBlueprint(
+        'https://example.com/plugin.zip',
+        'Generated Title',
+        'generated-author',
+        'Generated description',
+        {
+          extraPlugins: ['PluginA', 123],
+        }
+      ),
+    /Each entry in "extra-plugins" must be a string/
+  );
+
+  assert.throws(
+    () =>
+      buildBlueprint(
+        'https://example.com/plugin.zip',
+        'Generated Title',
+        'generated-author',
+        'Generated description',
+        {
+          blueprintOverride: {
+            plugins: ['PluginA', false],
+          },
+        }
+      ),
+    /Each entry in "blueprint-json.plugins" must be a string/
+  );
+});
+
 test('parseJsonInput validates JSON types', () => {
   assert.deepEqual(
     parseJsonInput('extra-plugins', '["PluginA"]', 'array'),

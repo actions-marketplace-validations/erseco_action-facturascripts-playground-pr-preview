@@ -68,8 +68,18 @@ export function parseOptionalBoolean(value, name) {
   );
 }
 
-function dedupePlugins(plugins) {
-  return [...new Set(plugins.map((plugin) => plugin.trim()).filter(Boolean))];
+function dedupePlugins(plugins, name = 'plugins') {
+  return [
+    ...new Set(
+      plugins.map((plugin) => {
+        if (typeof plugin !== 'string') {
+          throw new Error(`Each entry in "${name}" must be a string.`);
+        }
+
+        return plugin.trim();
+      }).filter(Boolean)
+    ),
+  ];
 }
 
 function mergeBlueprint(baseValue, overrideValue) {
@@ -129,7 +139,7 @@ export function buildBlueprint(
       author,
       description,
     },
-    plugins: dedupePlugins([zipUrl, ...extraPlugins]),
+    plugins: dedupePlugins([zipUrl, ...extraPlugins], 'extra-plugins'),
   };
 
   if (landingPage) {
@@ -172,7 +182,10 @@ export function buildBlueprint(
   const mergedBlueprint = mergeBlueprint(blueprint, blueprintOverride);
 
   if (Array.isArray(mergedBlueprint.plugins)) {
-    mergedBlueprint.plugins = dedupePlugins(mergedBlueprint.plugins);
+    mergedBlueprint.plugins = dedupePlugins(
+      mergedBlueprint.plugins,
+      'blueprint-json.plugins'
+    );
   }
 
   return mergedBlueprint;
