@@ -1,0 +1,43 @@
+name: 'FacturaScripts Playground PR Preview'
+description: 'Posts or updates a sticky PR comment with a FacturaScripts Playground preview link'
+author: 'erseco'
+
+inputs:
+  github-token:
+    description: 'GitHub token with pull-requests:write permission'
+    required: true
+  zip-url:
+    description: 'URL of the plugin/extension ZIP file to load in the playground'
+    required: true
+  title:
+    description: 'Title for the blueprint meta'
+    required: false
+    default: 'PR Preview'
+  description:
+    description: 'Description for the blueprint meta'
+    required: false
+    default: 'Preview this PR in FacturaScripts Playground'
+  author:
+    description: 'Author for the blueprint meta'
+    required: false
+    default: 'erseco'
+  playground-url:
+    description: 'Base URL of the FacturaScripts Playground'
+    required: false
+    default: 'https://erseco.github.io/facturascripts-playground/'
+  image-url:
+    description: 'URL of the image to display in the PR comment'
+    required: false
+    default: 'https://raw.githubusercontent.com/erseco/facturascripts-playground/main/public/logo.png'
+  comment-marker:
+    description: 'Hidden HTML marker used to identify the sticky comment'
+    required: false
+    default: 'facturascripts-playground-preview'
+
+outputs:
+  preview-url:
+    description: 'The full playground preview URL'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

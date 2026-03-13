@@ -1,0 +1,19 @@
+{
+  "name": "facturascripts-playground-pr-preview",
+  "version": "1.0.0",
+  "description": "GitHub Action that posts a FacturaScripts Playground PR preview comment",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild index.js --bundle --platform=node --target=node20 --format=cjs --outfile=dist/index.js",
+    "test": "node --test test/index.test.js"
+  },
+  "dependencies": {
+    "@actions/core": "^3.0.0",
+    "@actions/github": "^9.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "license": "MIT"
+}
